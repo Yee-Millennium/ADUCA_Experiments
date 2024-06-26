@@ -77,7 +77,9 @@ def main():
         raise ValueError("Invalid dataset name supplied.")
     
     d, n = DATASET_INFO[dataset]
+
     filepath = f"data/libsvm/{dataset}"
+
     data = libsvm_parser(filepath, n, d)
     loss = LogisticLoss(data)
     reg = ElasticNet(lambda1, lambda2)
