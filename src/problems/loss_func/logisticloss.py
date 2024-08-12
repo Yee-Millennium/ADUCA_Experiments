@@ -15,7 +15,7 @@ class LogisticLoss:
 
     def grad(self, x):
         A_x = self.A @ x
-        b_A_x = self.b * A_x
+        b_A_x = self.b * A_x 
         tmp = -self.b * np.exp(-b_A_x) / (np.exp(-b_A_x) + 1) / self.n
         return tmp @ self.A
 
