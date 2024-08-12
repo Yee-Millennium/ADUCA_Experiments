@@ -8,9 +8,9 @@ import json
 import logging
 
 from src.algorithms.gd import gd
-from src.algorithms.coder import coder
+from src.algorithms.coder import coder, coder_linesearch
 from src.algorithms.gr import gr
-from src.algorithms.adapCoder import adapCoder
+from src.algorithms.adapCODER import adapCODER
 
 from src.problems.utils.data_parsers import libsvm_parser
 from src.problems.loss_func.logisticloss import LogisticLoss
@@ -124,30 +124,33 @@ def main():
 
     if algorithm == "CODER":
         logging.info("Running CODER...")
-
         L = args.lipschitz
         gamma = args.gamma
         logging.info(f"Setting L = {L}, gamma = {gamma}")
         coder_params = {"L": L, "gamma": gamma}
         output, output_x = coder(problem, exitcriterion, coder_params)
-    
+    elif algorithm == "CODER_linesearch":
+        logging.info("Running CODER_linesearch...")
+        L = args.lipschitz
+        gamma = args.gamma
+        logging.info(f"Setting L = {L}, gamma = {gamma}")
+        coder_linesearch_params = {"L": L, "gamma": gamma}
+        output, output_x = coder_linesearch(problem, exitcriterion, coder_linesearch_params)
     elif algorithm == "GR":
         logging.info("Running Golden Ratio...")
-
         beta = args.beta
         logging.info(f"Setting beta ={beta}")
         gr_params = {"beta": beta}
         output, output_x = gr(problem, exitcriterion, gr_params)
     
-    elif algorithm == "AdapCoder":
+    elif algorithm == "AdapCODER":
         logging.info("Running Adaptive CODER...")
-
         beta3 = args.beta3
         beta2 = args.beta2
         beta1 = 1 - beta2 - beta3
         L = args.lipschitz
-        adapCoder_params = {"L": L, "beta1": beta1, "beta2": beta2, "beta3": beta3}
-        output, output_x = adapCoder(problem, exitcriterion, adapCoder_params)
+        adapCODER_params = {"L": L, "beta1": beta1, "beta2": beta2, "beta3": beta3}
+        output, output_x = adapCODER(problem, exitcriterion, adapCODER_params)
 
     # elif algorithm == "RCDM":
     #     Ls = np.ones(d) * args.lipschitz
