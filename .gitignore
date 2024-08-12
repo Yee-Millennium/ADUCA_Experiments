@@ -12,3 +12,4 @@ data/libsvm/phishing.txt
 data/libsvm/rcv1_train.binary
 data/libsvm/sonar_scale
 data/libsvm/sonar_scale.txt
+data/.DS_Store
