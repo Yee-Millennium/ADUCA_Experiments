@@ -39,7 +39,7 @@ DATASET_INFO = {
     "madelon": (500, 2000),
     "mushrooms": (112, 8124),
     "skin_nonskin": (3, 245057),
-    "SUSY": (18,500000)
+    "SUSY": (18,5000000)
 }
 
 def parse_commandline():
