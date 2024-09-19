@@ -10,7 +10,7 @@ import logging
 from src.algorithms.gd import gd
 from src.algorithms.coder import coder, coder_linesearch
 from src.algorithms.gr import gr
-from src.algorithms.adapCODER import adapCODER
+from src.algorithms.adapCODER import adapCODER, adapCODER_two_point_extrapolation
 
 from src.problems.utils.data_parsers import libsvm_parser
 from src.problems.loss_func.logisticloss import LogisticLoss
@@ -37,6 +37,9 @@ DATASET_INFO = {
     "phishing": (68, 11055),
     "colon-cancer": (2000, 62),
     "madelon": (500, 2000),
+    "mushrooms": (112, 8124),
+    "skin_nonskin": (3, 245057),
+    "SUSY": (18,500000)
 }
 
 def parse_commandline():
@@ -129,6 +132,7 @@ def main():
         logging.info(f"Setting L = {L}, gamma = {gamma}")
         coder_params = {"L": L, "gamma": gamma}
         output, output_x = coder(problem, exitcriterion, coder_params)
+
     elif algorithm == "CODER_linesearch":
         logging.info("Running CODER_linesearch...")
         L = args.lipschitz
@@ -136,6 +140,7 @@ def main():
         logging.info(f"Setting L = {L}, gamma = {gamma}")
         coder_linesearch_params = {"L": L, "gamma": gamma}
         output, output_x = coder_linesearch(problem, exitcriterion, coder_linesearch_params)
+        
     elif algorithm == "GR":
         logging.info("Running Golden Ratio...")
         beta = args.beta
@@ -151,6 +156,12 @@ def main():
         L = args.lipschitz
         adapCODER_params = {"L": L, "beta1": beta1, "beta2": beta2, "beta3": beta3}
         output, output_x = adapCODER(problem, exitcriterion, adapCODER_params)
+
+    elif algorithm == "AdapCODER_two_point":
+        logging.info("Running Adaptive CODER with two points extrapolation...")
+        beta = args.beta
+        adapCODER_two_point_params = {"beta": beta}
+        output, output_x = adapCODER_two_point_extrapolation(problem, exitcriterion, adapCODER_two_point_params)
 
     # elif algorithm == "RCDM":
     #     Ls = np.ones(d) * args.lipschitz
