@@ -1,4 +1,4 @@
-# Adaptive_CODER
+# ADUCA_Experiments
 
 This repository contains base code of the research project about Adaptive_CODER.
 

@@ -10,7 +10,7 @@ import logging
 from src.algorithms.gd import gd
 from src.algorithms.coder import coder, coder_linesearch
 from src.algorithms.gr import gr
-from src.algorithms.adapCODER import adapCODER, adapCODER_two_point_extrapolation
+from logistic_reg.src.algorithms.ADUCA import aduca
 
 from src.problems.utils.data_parsers import libsvm_parser
 from src.problems.loss_func.logisticloss import LogisticLoss
@@ -148,20 +148,11 @@ def main():
         gr_params = {"beta": beta}
         output, output_x = gr(problem, exitcriterion, gr_params)
     
-    elif algorithm == "AdapCODER":
-        logging.info("Running Adaptive CODER...")
-        beta3 = args.beta3
-        beta2 = args.beta2
-        beta1 = 1 - beta2 - beta3
-        L = args.lipschitz
-        adapCODER_params = {"L": L, "beta1": beta1, "beta2": beta2, "beta3": beta3}
-        output, output_x = adapCODER(problem, exitcriterion, adapCODER_params)
-
-    elif algorithm == "AdapCODER_two_point":
-        logging.info("Running Adaptive CODER with two points extrapolation...")
+    elif algorithm == "ADUCA":
+        logging.info("Running ADUCA...")
         beta = args.beta
-        adapCODER_two_point_params = {"beta": beta}
-        output, output_x = adapCODER_two_point_extrapolation(problem, exitcriterion, adapCODER_two_point_params)
+        aduca_params = {"beta": beta}
+        output, output_x = aduca(problem, exitcriterion, aduca_params)
 
     # elif algorithm == "RCDM":
     #     Ls = np.ones(d) * args.lipschitz
