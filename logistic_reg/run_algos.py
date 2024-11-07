@@ -27,7 +27,8 @@ os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
-DATASET_INFO = {
+## (Dimension, Sample size)
+DATASET_INFO = { 
     "sonar_scale": (60, 208),
     "a1a": (123, 1605),
     "a9a": (123, 32561),
