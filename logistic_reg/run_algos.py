@@ -10,7 +10,9 @@ import logging
 from src.algorithms.gd import gd
 from src.algorithms.coder import coder, coder_linesearch
 from src.algorithms.gr import gr
-from logistic_reg.src.algorithms.ADUCA import aduca
+from src.algorithms.aduca import aduca_lazy, aduca_lazy_restart
+from src.algorithms.acoder_vr import acodervr
+from src.algorithms.acoder import acoder
 
 from src.problems.utils.data_parsers import libsvm_parser
 from src.problems.loss_func.logisticloss import LogisticLoss
@@ -59,10 +61,12 @@ def parse_commandline():
     parser.add_argument('--lipschitz', required=True, type=float, help='Lipschitz constant')
     parser.add_argument('--gamma', type=float, default=0.0, help='Gamma')
     parser.add_argument('--K', type=int, default=0, help='Variance reduction K')
-    parser.add_argument('--beta1', type = float, help='adapCoder constant parameter 1')
-    parser.add_argument('--beta2', type = float, help='adapCoder constant parameter 2')
-    parser.add_argument('--beta3', type = float, help='adapCoder constant parameter 3')
-    parser.add_argument('--beta', type = float, help='gr constant parameter: bigger than \frac{\sqrt(5)-1}{2}')
+    # parser.add_argument('--beta1', type = float, help='adapCoder constant parameter 1')
+    # parser.add_argument('--beta2', type = float, help='adapCoder constant parameter 2')
+    # parser.add_argument('--beta3', type = float, help='adapCoder constant parameter 3')
+    parser.add_argument('--beta', type = float, help='aduca constant parameter')
+    parser.add_argument('--c', type = float, help='aduca constant parameter')
+    parser.add_argument('--restarts', type = int, help='aduca_restart constant parameter')
 
     return parser.parse_args()
 
@@ -113,26 +117,26 @@ def main():
     logging.info(f"outputfilename = {outputfilename}")
     logging.info("--------------------------------------------------")
 
-    # if algorithm == "ACODER":
-    #     L = args.lipschitz
-    #     gamma = args.gamma
-    #     acoder_params = {"L": L, "gamma": gamma}
-    #     output = acoder(problem, exitcriterion, acoder_params)
+    if algorithm == "ACODER":
+        L = args.lipschitz
+        gamma = args.gamma
+        acoder_params = {"L": L, "gamma": gamma}
+        output, output_v, output_x = acoder(problem, exitcriterion, acoder_params)
 
-    # elif algorithm == "ACODER-VR":
-    #     L = args.lipschitz
-    #     gamma = args.gamma
-    #     K = args.K if args.K != 0 else n
-    #     acodervr_params = {"L": L, "gamma": gamma, "K": K}
-    #     output = acodervr(problem, exitcriterion, acodervr_params)
-
-    if algorithm == "CODER":
+    elif algorithm == "CODER":
         logging.info("Running CODER...")
         L = args.lipschitz
         gamma = args.gamma
         logging.info(f"Setting L = {L}, gamma = {gamma}")
         coder_params = {"L": L, "gamma": gamma}
         output, output_x = coder(problem, exitcriterion, coder_params)
+
+    elif algorithm == "ACODER-VR":
+        L = args.lipschitz
+        gamma = args.gamma
+        K = args.K if args.K != 0 else n
+        acodervr_params = {"L": L, "gamma": gamma, "K": K}
+        output, output_v, output_y = acodervr(problem, exitcriterion, acodervr_params)
 
     elif algorithm == "CODER_linesearch":
         logging.info("Running CODER_linesearch...")
@@ -152,8 +156,23 @@ def main():
     elif algorithm == "ADUCA":
         logging.info("Running ADUCA...")
         beta = args.beta
-        aduca_params = {"beta": beta}
+        c = args.c
+        aduca_params = {"beta": beta, "c": c}
         output, output_x = aduca(problem, exitcriterion, aduca_params)
+    
+    elif algorithm == "ADUCA_lazy":
+        logging.info("Running ADUCA_lazy...")
+        beta = args.beta
+        c = args.c
+        aduca_params = {"beta": beta, "c": c}
+        output, output_x = aduca_lazy(problem, exitcriterion, aduca_params)
+    elif algorithm == "ADUCA_lazy_restart":
+        logging.info("Running ADUCA_lazy_restart...")
+        beta = args.beta
+        c = args.c
+        restarts = args.restarts 
+        aduca_params = {"beta": beta, "c": c, "restarts": restarts}
+        output, output_x = aduca_lazy_restart(problem, exitcriterion, aduca_params)
 
     # elif algorithm == "RCDM":
     #     Ls = np.ones(d) * args.lipschitz

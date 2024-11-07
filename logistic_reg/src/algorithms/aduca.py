@@ -157,6 +157,177 @@ def aduca(problem: CompositeFunc, exit_criterion: ExitCriterion, parameters, x_0
 
 
 
+def aduca_lazy(problem: CompositeFunc, exit_criterion: ExitCriterion, parameters, u_0=None):
+    # Init of adapCODER
+    beta = parameters["beta"]
+    c = parameters["c"]
+
+    phi_1 = 2 * c * beta * (1+beta)
+    phi_2 = (((1-2*c) * (1 + beta))  /  7 * beta)  ** 0.5 * 0.5
+    phi_3 = 1 / (7 * beta)
+
+    alpha = min(phi_1, (phi_2 / phi_3)**2)
+
+    a = 0
+    a_ = 0
+    A = 0
+
+    u = np.zeros(problem.d)
+    u_ = np.copy(u)
+    u_new = np.copy(u)
+    # u_hat = np.copy(u)
+    v = np.zeros(problem.d)
+    v_ = np.zeros(problem.d)
+
+    F = np.zeros(problem.d)
+    F_ = np.zeros(problem.d)
+    F_tilde = np.zeros(problem.d)
+    F_tilde_ = np.zeros(problem.d)
+    F_bar = np.copy(F_tilde)
+
+    if u_0 is None:
+        u_0 = np.random.randn(problem.d)
+    u_1 = u_0
+    
+    F_0 = problem.loss_func.grad(u_0)
+    F_tilde_0 = np.copy(F_0)
+    ## line-search for the first step
+    a_0 = 2 * phi_1
+    while True:
+        a_0 = a_0 / 2
+        u_1 = problem.reg_func.prox_opr(u_0 - a_0 * F_0, a_0)
+        
+        F_1 = problem.loss_func.grad(u_1)
+        F_tilde_1 = np.copy(F_tilde_0)
+        for j in range(0, problem.d, 1):
+            if j == 0:
+                F_tilde_1[0], b_A_x = problem.loss_func.grad_block_update(u_0, 0)
+            else:
+                F_tilde_1[j], b_A_x = problem.loss_func.grad_block_update(b_A_x, (j-1, u_1[j-1] - u_0[j-1]), j)
+        
+        norm_F = np.linalg.norm((F_1 - F_0))
+        norm_F_tilde = np.linalg.norm((F_1 - F_tilde_1))
+        norm_u = np.linalg.norm((u_1 - u_0))
+
+        # print(f"phi_2: {phi_2}")
+        # print(f"a_0: {a_0}")
+        if (a_0 * norm_F <= phi_2 * norm_u) and (a_0 * norm_F_tilde <= phi_2 * norm_u):
+            break
+
+    a_ = a_0
+    a = a_0
+    A += a_0
+
+    u = np.copy(u_1)
+    u_ = np.copy(u_0)
+    # u_hat = u_
+
+    F = np.copy(F_1)
+    F_ = np.copy(F_0)
+    F_tilde = np.copy(F_tilde_1)
+    F_tilde = np.copy(F_tilde_0)
+    
+
+
+    # Stepsize selection function
+    def aduca_stepsize(u, u_, a, a_, F, F_, F_tilde):
+        # step_1 = alpha * a
+        step_1 = alpha * a * 3
+
+        ### we can heuristically scale the step
+        L_hat_k = np.linalg.norm(F - F_tilde) / np.linalg.norm(u-u_)
+        # step_2 = (phi_2 / L_hat) * (a / a_)**0.5
+        step_2 = (phi_2 / L_hat_k) * (a / a_)**0.5    * 8
+
+        L_k = np.linalg.norm(F - F_) / np.linalg.norm(u - u_)
+        step_3 = (phi_3 ** 2) / (a_ * L_k**2)     * 8
+        
+        step = min(step_1, step_2, step_3)
+        # print(f" !!! Stepsize: {step}")
+        return step
+
+
+    # Run init
+    iteration = 0
+    exit_flag = False
+    start_time = time.time()
+    results = Results()
+    init_opt_measure = problem.func_value(u_)
+    logresult(results, 1, 0.0, init_opt_measure)
+
+    while not exit_flag:
+
+        # Step 4
+        step = aduca_stepsize(u, u_, a, a_, F, F_, F_tilde)
+        a_ = a
+        a = step
+        A += a
+
+        # Step 5
+        for j in range(0, problem.d):
+            # Step 9
+            if j == 0:
+                F_tilde[0] = F[0]
+            else:
+                F_tilde[j], b_A_x = problem.loss_func.grad_block_update(b_A_x, (j-1, u[j-1] - u_[j-1]), j)
+            # Step 10
+            F_bar[j] = F_tilde[j] + (a_ / a) * (F_[j] - F_tilde_[j] )
+            
+            # Step 11
+            v[j] = (1-beta) * u[j] + beta * v_[j]
+
+            # Step 12
+            u_new[j] = problem.reg_func.prox_opr_block(v_[j] - a * F_bar[j], a)
+        
+        np.copyto(F_, F)
+        F, b_A_x = problem.loss_func.grad_block_update(u)
+        np.copyto(F_tilde_, F_tilde)
+        np.copyto(u_, u)
+        np.copyto(u, u_new)
+        np.copyto(v_, v)
+
+        # u_hat = ((A - a) * u_hat / A) + (a*u / A)
+
+
+        iteration += 1
+        if iteration % exit_criterion.loggingfreq == 0:
+            elapsed_time = time.time() - start_time
+            opt_measure = problem.func_value(u)
+            logging.info(f"elapsed_time: {elapsed_time}, iteration: {iteration}, opt_measure: {opt_measure}")
+            logresult(results, iteration, elapsed_time, opt_measure)
+            exit_flag = CheckExitCondition(exit_criterion, iteration, elapsed_time, opt_measure)
+
+    return results, u
+
+
+
+
+
+def aduca_lazy_restart(problem: CompositeFunc, exit_criterion: ExitCriterion, parameters, u_0=None):
+    # Init of adapCODER
+    beta = parameters["beta"]
+    c = parameters["c"]
+    params = {"beta": beta, "c": c}
+
+    num_restarts = parameters["restarts"]
+    iterations = exit_criterion.maxiter // num_restarts
+
+    u = np.zeros(problem.d)
+    u_output = np.copy(u)
+
+    exit_criterion.maxiter = iterations
+
+    for restart in range(num_restarts):
+        if restart == 0:
+            result, u = aduca_lazy(problem=problem, exit_criterion=exit_criterion, parameters=params, u_0 = u_0)
+        else:
+            # print(f"This is u: {u}")
+            result, u_output = aduca_lazy(problem=problem, exit_criterion=exit_criterion, parameters=params, u_0 = u)
+            u = np.copy(u_output)
+    return u
+
+
+
 
 # ### three points extrapolation
 # def aduca(problem: CompositeFunc, exit_criterion: ExitCriterion, parameters, x_0=None):
