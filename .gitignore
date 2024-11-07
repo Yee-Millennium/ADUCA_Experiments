@@ -31,3 +31,12 @@ output/sonar_scale-0.0_0.0-AdapCODER-0.0-output-2024-08-12_04-59-00-008072.json
 output/sonar_scale-0.0_0.0-CODER_linesearch-0.0-output-2024-08-12_04-44-59-051228.json
 plot.ipynb
 /output
+logistic_reg/data/libsvm/colon-cancer
+logistic_reg/data/libsvm/gisette_scale
+logistic_reg/data/libsvm/madelon
+logistic_reg/data/libsvm/mushrooms
+logistic_reg/data/libsvm/news20.binary
+logistic_reg/data/libsvm/phishing
+logistic_reg/data/libsvm/rcv1_train.binary
+logistic_reg/data/libsvm/skin_nonskin
+logistic_reg/data/libsvm/SUSY
