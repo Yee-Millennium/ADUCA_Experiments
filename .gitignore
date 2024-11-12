@@ -40,3 +40,4 @@ logistic_reg/data/libsvm/phishing
 logistic_reg/data/libsvm/rcv1_train.binary
 logistic_reg/data/libsvm/skin_nonskin
 logistic_reg/data/libsvm/SUSY
+/Finite-Sum-Halpern-Iteration
