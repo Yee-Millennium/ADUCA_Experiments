@@ -67,6 +67,7 @@ def parse_commandline():
     parser.add_argument('--beta', type = float, help='aduca constant parameter')
     parser.add_argument('--c', type = float, help='aduca constant parameter')
     parser.add_argument('--restarts', type = int, help='aduca_restart constant parameter')
+    parser.add_argument('--block_size', type = int, help='block_size parameter >= 1, <= n')
 
     return parser.parse_args()
 
@@ -164,7 +165,8 @@ def main():
         logging.info("Running ADUCA_lazy...")
         beta = args.beta
         c = args.c
-        aduca_params = {"beta": beta, "c": c}
+        block_size = args.block_size
+        aduca_params = {"beta": beta, "c": c, "block_size":block_size}
         output, output_x = aduca_lazy(problem, exitcriterion, aduca_params)
     elif algorithm == "ADUCA_lazy_restart":
         logging.info("Running ADUCA_lazy_restart...")
