@@ -43,3 +43,7 @@ logistic_reg/data/libsvm/SUSY
 /Finite-Sum-Halpern-Iteration
 /CODER
 /matrix_game
+/VR_for_VI
+/SVM/data
+/SVM/output
+/logistic_reg/output
