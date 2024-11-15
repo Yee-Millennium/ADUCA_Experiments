@@ -10,7 +10,7 @@ import logging
 from src.algorithms.gd import gd
 from src.algorithms.coder import coder, coder_linesearch
 from src.algorithms.gr import gr
-from src.algorithms.aduca import aduca_lazy, aduca_lazy_restart
+from src.algorithms.aduca import aduca_lazy
 from src.algorithms.acoder_vr import acodervr
 from src.algorithms.acoder import acoder
 
@@ -119,6 +119,7 @@ def main():
     logging.info("--------------------------------------------------")
 
     if algorithm == "ACODER":
+        logging.info("Running ACODER...")
         L = args.lipschitz
         gamma = args.gamma
         acoder_params = {"L": L, "gamma": gamma}
