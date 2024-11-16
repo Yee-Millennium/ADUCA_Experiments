@@ -10,13 +10,13 @@ import os
 from src.algorithms.utils.exitcriterion import ExitCriterion, CheckExitCondition
 from src.problems.GMVI_func import GMVIProblem
 from src.algorithms.utils.results import Results, logresult
-from src.algorithms.coder import coder, CODERParams
+from src.algorithms.coder import coder, coder_linesearch , CODERParams
 from src.algorithms.codervr import codervr, CODERVRParams
 from src.algorithms.pccm import pccm, PCCMParams
 from src.algorithms.prcm import prcm, PRCMParams
 from src.algorithms.rapd import rapd
 from src.algorithms.gr import gr
-from src.algorithms.aduca import aduca_lazy
+from src.algorithms.aduca import aduca_lazy, aduca_lazy_restart
 # from src import (
 #     libsvm_parser, SVMElasticOprFunc, SVMElasticGFunc, GMVIProblem,
 #     ExitCriterion, CODERParams, CODERVRParams, PCCMParams, PRCMParams,
@@ -124,6 +124,11 @@ def main():
         gamma = args.gamma
         coder_params = CODERParams(L, gamma)
         output, output_x = coder(problem, exitcriterion, coder_params)
+    if algorithm == "CODER_linesearch":
+        logging.info("Running CODER_linesearch...")
+        gamma = args.gamma
+        coder_params = CODERParams(0, gamma)
+        output, output_x = coder_linesearch(problem, exitcriterion, coder_params)
 
     elif algorithm == "CODERVR":
         logging.info("Running CODERVR...")
@@ -169,7 +174,14 @@ def main():
         c = args.c
         logging.info("Running ADUCA...")
         param = {"beta": beta, "c": c}
-        output, output_x = aduca_lazy(problem, exitcriterion, param)
+        output, output_x = aduca_lazy_restart(problem, exitcriterion, param)
+    elif algorithm == "ADUCA_restart":
+        beta = args.beta
+        c = args.c
+        restarts = args.restarts
+        logging.info("Running ADUCA_restart...")
+        param = {"beta": beta, "c": c, "restarts": restarts}
+        output, output_x = aduca_lazy_restart(problem, exitcriterion, param)
 
     else:
         print("Wrong algorithm name supplied")
