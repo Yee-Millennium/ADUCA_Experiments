@@ -47,3 +47,4 @@ logistic_reg/data/libsvm/SUSY
 /SVM/data
 /SVM/output
 /logistic_reg/output
+/restarting_FOM_for_LP
