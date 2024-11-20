@@ -48,3 +48,7 @@ logistic_reg/data/libsvm/SUSY
 /SVM/output
 /logistic_reg/output
 /restarting_FOM_for_LP
+/GRPDA-experiment
+/SVM_ADUCA/data
+/SVM_ADUCA/output
+/Efficient-GLP
