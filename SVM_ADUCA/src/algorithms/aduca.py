@@ -10,6 +10,8 @@ logging.basicConfig(level=logging.INFO)
 
 def aduca_lazy(problem: GMVIProblem, exit_criterion: ExitCriterion, parameters, u_0=None):
     # Init of adapCODER
+    d = problem.operator_func.d
+    n = problem.operator_func.n
     beta = parameters["beta"]
     c = parameters["c"]
     # block_size = parameters['block_size']
@@ -52,7 +54,7 @@ def aduca_lazy(problem: GMVIProblem, exit_criterion: ExitCriterion, parameters, 
     while True:
         u = np.copy(u_0)
         a_0 = a_0 / 2
-        u_1 = problem.g_func.prox_opr(u_0 - a_0 * F_0, a_0)
+        u_1 = problem.g_func.prox_opr(u_0 - a_0 * F_0, a_0, d)
         
         F_1 = problem.operator_func.func_map(u_1)
         F_tilde_1 = np.copy(F_tilde_0)
@@ -170,50 +172,50 @@ def aduca_lazy(problem: GMVIProblem, exit_criterion: ExitCriterion, parameters, 
     return results, u
 
 
-### Ergodic Restart Scheme
-def aduca_lazy_restart(problem: GMVIProblem, exit_criterion: ExitCriterion, parameters, u_0=None):
-    # Init of adapCODER
-    beta = parameters["beta"]
-    c = parameters["c"]
-    params = {"beta": beta, "c": c}
+# ### Ergodic Restart Scheme
+# def aduca_lazy_restart(problem: GMVIProblem, exit_criterion: ExitCriterion, parameters, u_0=None):
+#     # Init of adapCODER
+#     beta = parameters["beta"]
+#     c = parameters["c"]
+#     params = {"beta": beta, "c": c}
 
-    num_restarts = parameters["restarts"]
-    iterations = exit_criterion.maxiter // num_restarts
+#     num_restarts = parameters["restarts"]
+#     iterations = exit_criterion.maxiter // num_restarts
 
-    if u_0 == None:
-        u = np.zeros(problem.d)
-    else:
-        u = np.copy(u_0)
-    u_output = np.copy(u)
+#     if u_0 == None:
+#         u = np.zeros(problem.d)
+#     else:
+#         u = np.copy(u_0)
+#     u_output = np.copy(u)
 
-    exit_criterion.maxiter = iterations
+#     exit_criterion.maxiter = iterations
 
-    iteration_total = 0
-    exit_flag = False
-    start_time = time.time()
-    results = Results()
-    init_opt_measure = problem.func_value(u)
-    logresult(results, 1, 0.0, init_opt_measure)
+#     iteration_total = 0
+#     exit_flag = False
+#     start_time = time.time()
+#     results = Results()
+#     init_opt_measure = problem.func_value(u)
+#     logresult(results, 1, 0.0, init_opt_measure)
 
-    for restart in range(num_restarts):
-        if restart == 0:
-            result, u = aduca_lazy(problem=problem, exit_criterion=exit_criterion, parameters=params, u_0 = u_0)
-            iteration_total += iterations
-        if iteration_total % (iterations *  exit_criterion.loggingfreq) == 0:
-            elapsed_time = time.time() - start_time
-            opt_measure = problem.func_value(u)
-            logging.info(f"elapsed_time: {elapsed_time}, iteration: {iteration_total}, opt_measure: {opt_measure}")
-            logresult(results, iteration_total, elapsed_time, opt_measure)
-        else:
-            # print(f"This is u: {u}")
-            result, u_output = aduca_lazy(problem=problem, exit_criterion=exit_criterion, parameters=params, u_0 = u)
-            u = np.copy(u_output)
-            if iteration_total % (iterations *  exit_criterion.loggingfreq) == 0:
-                elapsed_time = time.time() - start_time
-                opt_measure = problem.func_value(u)
-                logging.info(f"elapsed_time: {elapsed_time}, iteration: {iteration_total}, opt_measure: {opt_measure}")
-                logresult(results, iteration_total, elapsed_time, opt_measure)
-    return results, u
+#     for restart in range(num_restarts):
+#         if restart == 0:
+#             result, u = aduca_lazy(problem=problem, exit_criterion=exit_criterion, parameters=params, u_0 = u_0)
+#             iteration_total += iterations
+#         if iteration_total % (iterations *  exit_criterion.loggingfreq) == 0:
+#             elapsed_time = time.time() - start_time
+#             opt_measure = problem.func_value(u)
+#             logging.info(f"elapsed_time: {elapsed_time}, iteration: {iteration_total}, opt_measure: {opt_measure}")
+#             logresult(results, iteration_total, elapsed_time, opt_measure)
+#         else:
+#             # print(f"This is u: {u}")
+#             result, u_output = aduca_lazy(problem=problem, exit_criterion=exit_criterion, parameters=params, u_0 = u)
+#             u = np.copy(u_output)
+#             if iteration_total % (iterations *  exit_criterion.loggingfreq) == 0:
+#                 elapsed_time = time.time() - start_time
+#                 opt_measure = problem.func_value(u)
+#                 logging.info(f"elapsed_time: {elapsed_time}, iteration: {iteration_total}, opt_measure: {opt_measure}")
+#                 logresult(results, iteration_total, elapsed_time, opt_measure)
+#     return results, u
 
 
 

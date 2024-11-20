@@ -1,3 +1,5 @@
+### SVM
+
 import argparse
 import datetime
 import numpy as np
@@ -16,7 +18,7 @@ from src.algorithms.pccm import pccm, PCCMParams
 from src.algorithms.prcm import prcm, PRCMParams
 from src.algorithms.rapd import rapd
 from src.algorithms.gr import gr
-from src.algorithms.aduca import aduca_lazy, aduca_lazy_restart
+from src.algorithms.aduca import aduca_lazy
 # from src import (
 #     libsvm_parser, SVMElasticOprFunc, SVMElasticGFunc, GMVIProblem,
 #     ExitCriterion, CODERParams, CODERVRParams, PCCMParams, PRCMParams,
@@ -50,7 +52,14 @@ DATASET_INFO = {
     "madelon": (500, 2000),
     "mushrooms": (112, 8124),
     "skin_nonskin": (3, 245057),
-    "SUSY": (18,5000000)
+    "SUSY": (18,5000000),
+    "epsilon_normalized": (2000,400000),
+    "HIGGS": (28, 11000000),
+    "ijcnn1": (22, 49990),
+    "w1a": (300, 2477),
+    "w7a":(300, 24692),
+    "w8a": (300, 49749),
+    "covtype":(54, 581012)
 }
 
 def parse_commandline():
@@ -124,7 +133,7 @@ def main():
         gamma = args.gamma
         coder_params = CODERParams(L, gamma)
         output, output_x = coder(problem, exitcriterion, coder_params)
-    if algorithm == "CODER_linesearch":
+    elif algorithm == "CODER_linesearch":
         logging.info("Running CODER_linesearch...")
         gamma = args.gamma
         coder_params = CODERParams(0, gamma)
@@ -174,7 +183,7 @@ def main():
         c = args.c
         logging.info("Running ADUCA...")
         param = {"beta": beta, "c": c}
-        output, output_x = aduca_lazy_restart(problem, exitcriterion, param)
+        output, output_x = aduca_lazy(problem, exitcriterion, param)
     elif algorithm == "ADUCA_restart":
         beta = args.beta
         c = args.c

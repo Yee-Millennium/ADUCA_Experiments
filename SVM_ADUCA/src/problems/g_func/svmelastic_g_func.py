@@ -11,6 +11,7 @@ class SVMElasticGFunc:
         assert len(x) == self.d + self.n
 
         ret_1 = np.sum(np.abs(x[:self.d]))  # L1 regularization part
+        # print(f"!!! np.sum(x[:self.d]): {np.sum(x[:self.d])} ")
         ret_2 = np.sum(x[:self.d] ** 2)     # L2 regularization part
         ret = self.lambda1 * ret_1 + (self.lambda2 / 2) * ret_2
 
@@ -39,10 +40,12 @@ class SVMElasticGFunc:
         else:
             return 0.0
         
-    def prox_opr(self, u, τ):
+    def prox_opr(self, u, τ, d):
         p1 = τ * self.lambda1
         p2 = 1.0 / (1.0 + τ * self.lambda2)
-        prox = p2 * np.sign(u) * np.maximum(0, np.abs(u) - p1)
-
-        p = np.minimum(0, np.maximum(-1, prox))
-        return p
+        prox = p2 * np.sign(u[:d]) * np.maximum(0, np.abs(u[:d]) - p1)
+        
+        p = np.minimum(0, np.maximum(-1, u[d:]))
+        new_u = np.concatenate((prox,p))
+        # print(f"!!! np.sum(p): {np.sum(p)} ")
+        return new_u
