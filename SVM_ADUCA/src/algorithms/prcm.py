@@ -3,18 +3,20 @@ import time
 import numpy as np
 import time
 import logging
+import math
 from src.algorithms.utils.exitcriterion import ExitCriterion, CheckExitCondition
 from src.problems.GMVI_func import GMVIProblem
 from src.algorithms.utils.results import Results, logresult
-
-class PRCMParams:
-    def __init__(self, L, gamma):
-        self.L = L
-        self.gamma = gamma
+from src.algorithms.utils.helper import construct_block_range
 
 def prcm(problem, exitcriterion, parameters, x0=None):
     # Initialize parameters and variables
-    L, gamma = parameters.L, parameters.gamma
+    L = parameters["L"]
+    gamma = parameters["gamma"]
+    block_size = parameters["block_size"]
+    blocks = construct_block_range(dimension=problem.d, block_size=block_size)
+    m = len(blocks)
+
     a, A = 0, 0
     x0 = np.zeros(problem.d) if x0 is None else x0
     x, x_prev = x0.copy(), x0.copy()
@@ -22,8 +24,8 @@ def prcm(problem, exitcriterion, parameters, x0=None):
     x_tilde = x0.copy()
     p = problem.operator_func.func_map(x0)
     p_prev = p.copy()
+    F_store = np.copy(p)
     z, z_prev, q = np.zeros(problem.d), np.zeros(problem.d), np.zeros(problem.d)
-    m = problem.d  # Assuming each block is a coordinate
 
     # Initialization
     iteration = 0
@@ -46,20 +48,24 @@ def prcm(problem, exitcriterion, parameters, x0=None):
         A = A_prev + a
 
         for _ in range(m):
-            # Randomly select a coordinate block j for updates
-            j = np.random.randint(1, m + 1)  # Random index from 1 to m
+            # Randomly select a block for updates
+            start = np.random.randint(0, problem.d-block_size+1)
+            end = np.random.randint(start + block_size + 1, problem.d+1)
+            block = range(start, end)
 
             # Step 6
-            p[j - 1] = problem.operator_func.func_map_block(j, x)
+            p_prev[block] = p[block]
+            p[block] = F_store[block]
 
             # Step 7
-            q[j - 1] = p[j - 1]
+            q[block] = p[block]
 
             # Step 8
-            z[j - 1] = z_prev[j - 1] + a * q[j - 1]
+            z[block] = z_prev[block] + a * q[block]
 
             # Step 9
-            x[j - 1] = problem.g_func.prox_opr_block(j, x0[j - 1] - z[j - 1], A)
+            x[block] = problem.g_func.prox_opr_block(block, x0[block] - z[block], A)
+            F_store = problem.operator_func.func_map_block_update(F_store, x[block], x_prev[block],block)
 
         x_tilde_sum += a * x
         iteration += m

@@ -12,18 +12,13 @@ import os
 from src.algorithms.utils.exitcriterion import ExitCriterion, CheckExitCondition
 from src.problems.GMVI_func import GMVIProblem
 from src.algorithms.utils.results import Results, logresult
-from src.algorithms.coder import coder, coder_linesearch , CODERParams
+from src.algorithms.coder import coder, coder_linesearch
 from src.algorithms.codervr import codervr, CODERVRParams
-from src.algorithms.pccm import pccm, PCCMParams
-from src.algorithms.prcm import prcm, PRCMParams
+from src.algorithms.pccm import pccm
+from src.algorithms.prcm import prcm
 from src.algorithms.rapd import rapd
 from src.algorithms.gr import gr
-from src.algorithms.aduca import aduca_lazy
-# from src import (
-#     libsvm_parser, SVMElasticOprFunc, SVMElasticGFunc, GMVIProblem,
-#     ExitCriterion, CODERParams, CODERVRParams, PCCMParams, PRCMParams,
-#     coder, codervr, rapd, pccm, prcm
-# )
+from src.algorithms.aduca import aduca, aduca_restart
 from src.problems.utils.data_parsers import libsvm_parser
 from src.problems.utils.data import Data
 from src.problems.GMVI_func import GMVIProblem
@@ -81,8 +76,8 @@ def parse_commandline():
     parser.add_argument('--K', type=int, default=0, help='Variance reduction K')
     parser.add_argument('--beta', type = float, help='aduca constant parameter')
     parser.add_argument('--c', type = float, help='aduca constant parameter')
-    parser.add_argument('--restarts', type = int, help='aduca_restart constant parameter')
-    parser.add_argument('--block_size', type = int, help='block_size parameter >= 1, <= n')
+    parser.add_argument('--restarts', type = int, default=float('inf'), help='aduca_restart constant parameter')
+    parser.add_argument('--block_size', type = int, default=1, help='block_size parameter >= 1, <= n')
 
     return parser.parse_args()
 
@@ -131,12 +126,14 @@ def main():
         logging.info("Running CODER...")
         L = args.lipschitz
         gamma = args.gamma
-        coder_params = CODERParams(L, gamma)
+        block_size = args.block_size
+        coder_params = {"L": L, "gamma": gamma, "block_size": block_size}
         output, output_x = coder(problem, exitcriterion, coder_params)
     elif algorithm == "CODER_linesearch":
         logging.info("Running CODER_linesearch...")
         gamma = args.gamma
-        coder_params = CODERParams(0, gamma)
+        block_size = args.block_size
+        coder_params = {"gamma": gamma, "block_size": block_size}
         output, output_x = coder_linesearch(problem, exitcriterion, coder_params)
 
     elif algorithm == "CODERVR":
@@ -145,7 +142,8 @@ def main():
         gamma = args.gamma
         M = args.M
         K = args.K
-        codervr_params = CODERVRParams(L, M, gamma, K)
+        block_size = args.block_size
+        codervr_params = {"L": L, "gamma": gamma, "M": M, "K": K, "block_size": block_size}
         output, output_x = codervr(problem, exitcriterion, codervr_params)
         print(f"Output saved to {outputfilename}")
 
@@ -164,33 +162,38 @@ def main():
         logging.info("Running PCCM...")
         L = args.lipschitz
         gamma = args.gamma
-        pccm_params = PCCMParams(L, gamma)
+        block_size = args.block_size
+        pccm_params = {"L": L, "gamma": gamma, "block_size": block_size}
         output, output_x = pccm(problem, exitcriterion, pccm_params)
 
     elif algorithm == "PRCM":
         logging.info("Running PRCM...")
         L = args.lipschitz
         gamma = args.gamma
-        prcm_params = PRCMParams(L, gamma)
+        block_size = args.block_size
+        prcm_params = {"L": L, "gamma": gamma, "block_size": block_size}
         output, output_x = prcm(problem, exitcriterion, prcm_params)
     elif algorithm == "GR":
         beta = args.beta
+        block_size = args.block_size
         logging.info("Running Golden Ratio...")
-        param = {"beta": beta}
+        param = {"beta": beta, "block_size": block_size}
         output, output_x = gr(problem, exitcriterion, param)
-    elif algorithm == "ADUCA":
-        beta = args.beta
-        c = args.c
-        logging.info("Running ADUCA...")
-        param = {"beta": beta, "c": c}
-        output, output_x = aduca_lazy(problem, exitcriterion, param)
     elif algorithm == "ADUCA_restart":
         beta = args.beta
         c = args.c
-        restarts = args.restarts
+        restartfreq = args.restarts
+        block_size = args.block_size
         logging.info("Running ADUCA_restart...")
-        param = {"beta": beta, "c": c, "restarts": restarts}
-        output, output_x = aduca_lazy_restart(problem, exitcriterion, param)
+        param = {"beta": beta, "c": c, "restartfreq": restartfreq, "block_size": block_size}
+        output, output_x = aduca_restart(problem, exitcriterion, param)
+    elif algorithm == "ADUCA":
+        beta = args.beta
+        c = args.c
+        block_size = args.block_size
+        logging.info("Running ADUCA...")
+        param = {"beta": beta, "c": c, "block_size": block_size}
+        output, output_x = aduca(problem, exitcriterion, param)
 
     else:
         print("Wrong algorithm name supplied")

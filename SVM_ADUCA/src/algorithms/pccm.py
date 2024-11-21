@@ -3,27 +3,31 @@ import time
 import numpy as np
 import time
 import logging
+import math
 from src.algorithms.utils.exitcriterion import ExitCriterion, CheckExitCondition
 from src.problems.GMVI_func import GMVIProblem
 from src.algorithms.utils.results import Results, logresult
-
-class PCCMParams:
-    def __init__(self, L, gamma):
-        self.L = L
-        self.gamma = gamma
+from src.algorithms.utils.helper import construct_block_range
 
 def pccm(problem, exitcriterion, parameters, x0=None):
     # Initialize parameters and variables
-    L, gamma = parameters.L, parameters.gamma
+    L = parameters["L"]
+    gamma = parameters["gamma"]
+    block_size = parameters["block_size"]
+    blocks = construct_block_range(dimension=problem.d, block_size=block_size)
+    m = len(blocks)
+
     a, A = 0, 0
     x0 = np.zeros(problem.d) if x0 is None else x0
     x, x_prev = x0.copy(), x0.copy()
     x_tilde_sum = np.zeros(problem.d)
     x_tilde = x0.copy()
+
     p = problem.operator_func.func_map(x0)
     p_prev = p.copy()
+    F_store = np.copy(p)
+
     z, z_prev, q = np.zeros(problem.d), np.zeros(problem.d), np.zeros(problem.d)
-    m = problem.d  # Assuming each block is a coordinate
 
     # Initialization
     iteration = 0
@@ -35,9 +39,9 @@ def pccm(problem, exitcriterion, parameters, x0=None):
 
     # Main loop
     while not exitflag:
-        x_prev[:] = x
-        p_prev[:] = p
-        z_prev[:] = z
+        x_prev = np.copy(x)
+        p_prev = np.copy(p)
+        z_prev = np.copy(z)
 
         # Update steps
         A_prev = A
@@ -45,18 +49,22 @@ def pccm(problem, exitcriterion, parameters, x0=None):
         a = (1 + gamma * A_prev) / (2 * L)
         A = A_prev + a
 
-        for j in range(m):
+        F_x_prev = np.copy(F_store)
+        for block in blocks:
             # Step 6
-            p[j] = problem.operator_func.func_map_block(j + 1, x)
+            p_prev[block] = p[block]
+            p[block] = F_store[block]
 
             # Step 7
-            q[j] = p[j]
+            q[block] = p[block]
 
             # Step 8
-            z[j] = z_prev[j] + a * q[j]
+            z[block] = z_prev[block] + a * q[block]
 
             # Step 9
-            x[j] = problem.g_func.prox_opr_block(j + 1, x0[j] - z[j], A)
+            x[block] = problem.g_func.prox_opr_block(block, x0[block] - z[block], A)
+
+            F_store = problem.operator_func.func_map_block_update(F_store, x[block], x_prev[block], block)
 
         x_tilde_sum += a * x
         iteration += m
@@ -70,5 +78,5 @@ def pccm(problem, exitcriterion, parameters, x0=None):
             logresult(results, iteration, elapsed_time, opt_measure)
             exitflag = CheckExitCondition(exitcriterion, iteration, elapsed_time, opt_measure)
 
-    # x_tilde
+    #  x_tilde
     return results, x

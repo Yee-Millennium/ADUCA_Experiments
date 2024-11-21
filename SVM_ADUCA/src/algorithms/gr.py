@@ -1,6 +1,7 @@
 import numpy as np
 import time
 import logging
+import math
 from src.algorithms.utils.results import Results, logresult
 from src.problems.GMVI_func import GMVIProblem
 from src.algorithms.utils.exitcriterion import ExitCriterion, CheckExitCondition
@@ -8,13 +9,15 @@ from src.algorithms.utils.exitcriterion import ExitCriterion, CheckExitCondition
 
 def gr(problem: GMVIProblem, exit_criterion: ExitCriterion, parameters, x_0=None):
     # Init of Golden-Ratio
+    block_size = parameters["block_size"]
+    block_number = math.ceil(problem.d / block_size)
     d = problem.operator_func.d
     n = problem.operator_func.n
     beta = parameters["beta"]
     rho = beta + beta**2
     if x_0 is None:
         x_0 = np.zeros(problem.d)
-    x_1 = x_0 - np.full(shape=problem.d, fill_value=(-0.1))
+    x_1 = np.full(shape=problem.d, fill_value=-0.0001)
 
     x = np.copy(x_1)
     x_ = np.copy(x_0)
@@ -73,8 +76,8 @@ def gr(problem: GMVIProblem, exit_criterion: ExitCriterion, parameters, x_0=None
 
         x_hat = (A - a)/A * x_hat + a/A * x
 
-        iteration += problem.d
-        if iteration % ( problem.d *  exit_criterion.loggingfreq) == 0:
+        iteration += block_number
+        if iteration % ( block_number *  exit_criterion.loggingfreq) == 0:
             elapsed_time = time.time() - start_time
             opt_measure = problem.func_value(x_hat)
             logging.info(f"elapsed_time: {elapsed_time}, iteration: {iteration}, opt_measure: {opt_measure}")

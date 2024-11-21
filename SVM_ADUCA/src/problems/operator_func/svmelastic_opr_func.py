@@ -35,6 +35,32 @@ class SVMElasticOprFunc:
         else:
             t = j - self.d - 1
             return -(self.b[t] * (self.A[t, :] @ x[:self.d]) - 1) / self.n
+        
+    def func_map_coordinate_update(self, F, uslice, uslice_, j):
+        # print(f"!!! self.A[j, :].shape: {self.A[j, :].shape}")
+        # print(f"!!! F[:self.d].shape: {F[:self.d].shape}")
+        if j >= self.d:
+            # print(f"j: {j}")
+            F[:self.d] += (uslice - uslice_) * self.b[j-self.d] * self.A[j-self.d, :] / self.n
+        else:
+            # print(f"!!! self.A[:, j].shape: {self.A[:, j].shape}")
+            # print(f"j: {j}")
+            # print(f"!!! self.b.shape: {self.b.shape}")
+            F[self.d:] += -self.b * (self.A[:, j] * (uslice - uslice_)) / self.n
+        return F
+    
+    def func_map_block_update(self, F, uslice, uslice_, block:range):
+        ### only update alpha
+        if block.start >= self.d:
+            F[:self.d] += ((self.b[block.start-self.d:block.stop-self.d]*(uslice - uslice_)) @ self.A[block.start-self.d:block.stop-self.d]) / self.n
+        ### only update x
+        elif block.stop <= self.d:
+            F[self.d:] += -self.b * (self.A[:, block] @ (uslice - uslice_)) / self.n
+        ### update x (uslice[: self.d-block.start]), and update alpha (uslice[self.d-block.start:])
+        else:
+            F[:self.d] += ((self.b[:block.stop-self.d] *(uslice[(self.d - block.start):] - uslice_[(self.d - block.start):])) @ self.A[:(block.stop - self.d)]) / self.n
+            F[self.d:] += -self.b * (self.A[:, block.start:] @ (uslice[:(self.d - block.start)] - uslice_[:(self.d - block.start)])) / self.n
+        return F
 
     def func_map_block_sample(self, j, t, x):
         assert len(x) == self.d + self.n
