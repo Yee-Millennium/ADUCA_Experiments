@@ -52,3 +52,5 @@ logistic_reg/data/libsvm/SUSY
 /SVM_ADUCA/data
 /SVM_ADUCA/output
 /Efficient-GLP
+/LP_ADUCA/output
+/LP_ADUCA/data
