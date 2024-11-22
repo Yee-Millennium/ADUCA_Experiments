@@ -2,7 +2,6 @@ import numpy as np
 from scipy.sparse import csc_matrix
 import logging
 import copy
-import random
 import time
 from math import inf
 import sys
@@ -11,6 +10,7 @@ from src.algorithms.utils.exitcriterion import ExitCriterion, check_exit_conditi
 from src.algorithms.utils.results import Results
 from src.algorithms.utils.helper import compute_fvaluegap_metricLP, compute_nzrows_for_blocks
 from src.problems.standardLP import StandardLinearProgram
+
 
 def prox_block_u(z, block:range, d):
     if block.start >= d:  
@@ -86,8 +86,8 @@ def aduca(
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         handler.setFormatter(formatter)
         logger.addHandler(handler)
-
-
+    
+    
     if io is not None:
         io.flush()
 

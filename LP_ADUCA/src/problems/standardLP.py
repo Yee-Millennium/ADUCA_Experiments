@@ -52,3 +52,5 @@ class StandardLinearProgram:
             np.ndarray: Result after applying the proximal operator.
         """
         return np.maximum(x, 0.0)
+    
+    
