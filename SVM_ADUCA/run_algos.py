@@ -86,7 +86,6 @@ def main():
     args = parse_commandline()
     outputdir = args.outputdir
     algorithm = args.algo
-
     # Problem Setup
     dataset = args.dataset
     filepath = f"data/{dataset}"

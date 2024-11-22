@@ -137,7 +137,7 @@ def aduca(problem: GMVIProblem, exit_criterion: ExitCriterion, parameters, u_0=N
 
             # Step 10
             u_[block] = u[block]
-            u[block] = problem.g_func.prox_opr_block(block ,v[block] - a * F_bar[block], a)
+            u[block] = problem.g_func.prox_opr_block(block ,v[block] - a * F_bar[block], a) ## Rescaling
 
             # Step 11
             F_tilde_[block] = F_tilde[block]
@@ -243,7 +243,7 @@ def aduca_restart(problem: GMVIProblem, exit_criterion: ExitCriterion, parameter
         F_tilde_1 = np.copy(F_tilde_0)
 
         ## line-search for the first step
-        a_0 = 10 * phi_1
+        a_0 = 2 * phi_1
         while True:
             F_store = np.copy(F_0)
             a_0 = a_0 / 2
@@ -318,11 +318,11 @@ def aduca_restart(problem: GMVIProblem, exit_criterion: ExitCriterion, parameter
             
             if outer_k % (m *  exit_criterion.loggingfreq) == 0:
                 # Compute averaged variables
-                step = aduca_stepsize(u,u_,a,a_,F,F_,F_tilde)
-                a_ = a
-                a = step
-                A += a      
-                u_hat = ((A - a) * u_hat / A) + (a*u / A)
+                # step = aduca_stepsize(u,u_,a,a_,F,F_,F_tilde)
+                # a_ = a
+                # a = step
+                # A += a      
+                # u_hat = ((A - a) * u_hat / A) + (a*u / A)
                 elapsed_time = time.time() - start_time
                 opt_measure = problem.func_value(u_hat)
                 logging.info(f"elapsed_time: {elapsed_time}, iteration: {outer_k}, opt_measure: {opt_measure}")
