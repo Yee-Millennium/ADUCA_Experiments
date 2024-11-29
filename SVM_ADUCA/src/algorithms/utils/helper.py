@@ -1,8 +1,8 @@
-def construct_block_range(dimension, block_size):
+def construct_block_range(begin: int, end: int, block_size):
     blocks = []
 
-    for start in range(0, dimension, block_size):
-        end = min(start + block_size, dimension)  # Ensure the end doesn't exceed total columns
-        block_range = range(start, end)
+    for start in range(begin, end, block_size):
+        stop = min(start + block_size, end)  # Ensure the end doesn't exceed total columns
+        block_range = range(start, stop)
         blocks.append(block_range)
     return blocks

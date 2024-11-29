@@ -18,7 +18,7 @@ from src.algorithms.pccm import pccm
 from src.algorithms.prcm import prcm
 from src.algorithms.rapd import rapd
 from src.algorithms.gr import gr
-from src.algorithms.aduca import aduca, aduca_restart
+from src.algorithms.aduca import aduca, aduca_restart, aduca_restart_scale, aduca_scale
 from src.problems.utils.data_parsers import libsvm_parser
 from src.problems.utils.data import Data
 from src.problems.GMVI_func import GMVIProblem
@@ -54,7 +54,8 @@ DATASET_INFO = {
     "w1a": (300, 2477),
     "w7a":(300, 24692),
     "w8a": (300, 49749),
-    "covtype":(54, 581012)
+    "covtype":(54, 581012),
+    "real-sim":(20958, 72309)
 }
 
 def parse_commandline():
@@ -76,8 +77,9 @@ def parse_commandline():
     parser.add_argument('--K', type=int, default=0, help='Variance reduction K')
     parser.add_argument('--beta', type = float, help='aduca constant parameter')
     parser.add_argument('--c', type = float, help='aduca constant parameter')
-    parser.add_argument('--restarts', type = int, default=float('inf'), help='aduca_restart constant parameter')
+    parser.add_argument('--restartfreq', type = int, default=float('inf'), help='aduca_restart constant parameter')
     parser.add_argument('--block_size', type = int, default=1, help='block_size parameter >= 1, <= n')
+    parser.add_argument('--block_size_2', type = int, default=float('inf'), help='block_size parameter >= 1, <= n')
 
     return parser.parse_args()
 
@@ -88,7 +90,7 @@ def main():
     algorithm = args.algo
     # Problem Setup
     dataset = args.dataset
-    filepath = f"data/{dataset}"
+    filepath = f"../data/{dataset}"
     lambda1 = args.lambda1
     lambda2 = args.lambda2
 
@@ -126,13 +128,15 @@ def main():
         L = args.lipschitz
         gamma = args.gamma
         block_size = args.block_size
-        coder_params = {"L": L, "gamma": gamma, "block_size": block_size}
+        block_size_2 = args.block_size_2
+        coder_params = {"L": L, "gamma": gamma, "block_size": block_size, "block_size_2": block_size_2}
         output, output_x = coder(problem, exitcriterion, coder_params)
     elif algorithm == "CODER_linesearch":
         logging.info("Running CODER_linesearch...")
         gamma = args.gamma
         block_size = args.block_size
-        coder_params = {"gamma": gamma, "block_size": block_size}
+        block_size_2 = args.block_size_2
+        coder_params = {"gamma": gamma, "block_size": block_size, "block_size_2": block_size_2}
         output, output_x = coder_linesearch(problem, exitcriterion, coder_params)
 
     elif algorithm == "CODERVR":
@@ -162,7 +166,8 @@ def main():
         L = args.lipschitz
         gamma = args.gamma
         block_size = args.block_size
-        pccm_params = {"L": L, "gamma": gamma, "block_size": block_size}
+        block_size_2 = args.block_size_2
+        pccm_params = {"L": L, "gamma": gamma, "block_size": block_size, "block_size_2": block_size_2}
         output, output_x = pccm(problem, exitcriterion, pccm_params)
 
     elif algorithm == "PRCM":
@@ -170,18 +175,20 @@ def main():
         L = args.lipschitz
         gamma = args.gamma
         block_size = args.block_size
-        prcm_params = {"L": L, "gamma": gamma, "block_size": block_size}
+        block_size_2 = args.block_size_2
+        prcm_params = {"L": L, "gamma": gamma, "block_size": block_size, "block_size_2": block_size_2}
         output, output_x = prcm(problem, exitcriterion, prcm_params)
     elif algorithm == "GR":
         beta = args.beta
         block_size = args.block_size
+        block_size_2 = args.block_size_2
         logging.info("Running Golden Ratio...")
-        param = {"beta": beta, "block_size": block_size}
+        param = {"beta": beta, "block_size": block_size, "block_size_2": block_size_2}
         output, output_x = gr(problem, exitcriterion, param)
     elif algorithm == "ADUCA_restart":
         beta = args.beta
         c = args.c
-        restartfreq = args.restarts
+        restartfreq = args.restartfreq
         block_size = args.block_size
         logging.info("Running ADUCA_restart...")
         param = {"beta": beta, "c": c, "restartfreq": restartfreq, "block_size": block_size}
@@ -193,17 +200,37 @@ def main():
         logging.info("Running ADUCA...")
         param = {"beta": beta, "c": c, "block_size": block_size}
         output, output_x = aduca(problem, exitcriterion, param)
+    elif algorithm == "ADUCA_restart_scale":
+        beta = args.beta
+        c = args.c
+        restartfreq = args.restartfreq
+        block_size = args.block_size
+        block_size_2 = args.block_size_2
+        logging.info("Running ADUCA_restart_scale...")
+        param = {"beta": beta, "c": c, "restartfreq": restartfreq, "block_size": block_size, "block_size_2": block_size_2}
+        output, output_x = aduca_restart_scale(problem, exitcriterion, param)
+    elif algorithm == "ADUCA_scale":
+        beta = args.beta
+        c = args.c
+        block_size = args.block_size
+        block_size_2 = args.block_size_2
+        logging.info("Running ADUCA_scale...")
+        param = {"beta": beta, "c": c, "block_size": block_size, "block_size_2": block_size_2}
+        output, output_x = aduca_scale(problem, exitcriterion, param)
 
     else:
         print("Wrong algorithm name supplied")
     
+
     with open(outputfilename, 'w') as outfile:
         json.dump({"args": vars(args), 
-                   "output_x": output_x.tolist(),
-                   "iterations": output.iterations, 
-                   "times": output.times,
-                   "optmeasures": output.optmeasures}, 
-                   outfile)
+                "output_x": output_x.tolist(),
+                "iterations": output.iterations, 
+                "times": output.times,
+                "optmeasures": output.optmeasures,
+                "L": output.L,
+                "L_hat": output.L_hat}, 
+                outfile)
         logging.info(f"output saved to {outputfilename}")
 
 if __name__ == "__main__":

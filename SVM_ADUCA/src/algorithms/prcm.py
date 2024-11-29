@@ -11,11 +11,22 @@ from src.algorithms.utils.helper import construct_block_range
 
 def prcm(problem, exitcriterion, parameters, x0=None):
     # Initialize parameters and variables
+    d = problem.operator_func.d
+    n = problem.operator_func.n
     L = parameters["L"]
     gamma = parameters["gamma"]
-    block_size = parameters["block_size"]
-    blocks = construct_block_range(dimension=problem.d, block_size=block_size)
+    block_size = parameters['block_size']
+    blocks_1 = construct_block_range(begin=0, end=d, block_size=block_size)
+    block_size_2 = parameters['block_size_2']
+    blocks_2 = construct_block_range(begin=d, end = d+n, block_size=block_size_2)
+    blocks = blocks_1 + blocks_2
+    m_1 = len(blocks_1)
+    m_2 = len(blocks_2)
     m = len(blocks)
+    logging.info(f"m_1 = {m_1}")
+    logging.info(f"m_2 = {m_2}")
+    logging.info(f"m = {m}")
+    block_size = block_size_2
 
     a, A = 0, 0
     x0 = np.zeros(problem.d) if x0 is None else x0
@@ -50,7 +61,7 @@ def prcm(problem, exitcriterion, parameters, x0=None):
         for _ in range(m):
             # Randomly select a block for updates
             start = np.random.randint(0, problem.d-block_size+1)
-            end = np.random.randint(start + block_size + 1, problem.d+1)
+            end = np.random.randint(start + block_size, problem.d+1)
             block = range(start, end)
 
             # Step 6

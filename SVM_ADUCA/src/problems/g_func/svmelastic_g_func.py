@@ -31,7 +31,7 @@ class SVMElasticGFunc:
         else:
             return min(0.0, max(-1.0, u))
         
-    def prox_opr_block(self, block:range, u_block, tau):
+    def prox_opr_block(self, block:range, u_block, tau: np.array):
         if block.stop <= self.d:
             p1 = tau * self.lambda1
             p2 = 1.0 / (1.0 + tau * self.lambda2)

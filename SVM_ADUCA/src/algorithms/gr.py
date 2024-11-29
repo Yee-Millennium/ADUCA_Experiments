@@ -5,14 +5,25 @@ import math
 from src.algorithms.utils.results import Results, logresult
 from src.problems.GMVI_func import GMVIProblem
 from src.algorithms.utils.exitcriterion import ExitCriterion, CheckExitCondition
+from src.algorithms.utils.helper import construct_block_range
 
 
 def gr(problem: GMVIProblem, exit_criterion: ExitCriterion, parameters, x_0=None):
     # Init of Golden-Ratio
-    block_size = parameters["block_size"]
-    block_number = math.ceil(problem.d / block_size)
     d = problem.operator_func.d
     n = problem.operator_func.n
+    block_size = parameters['block_size']
+    blocks_1 = construct_block_range(begin=0, end=d, block_size=block_size)
+    block_size_2 = parameters['block_size_2']
+    blocks_2 = construct_block_range(begin=d, end = d+n, block_size=block_size_2)
+    blocks = blocks_1 + blocks_2
+    m_1 = len(blocks_1)
+    m_2 = len(blocks_2)
+    m = len(blocks)
+    logging.info(f"m_1 = {m_1}")
+    logging.info(f"m_2 = {m_2}")
+    logging.info(f"m = {m}")
+
     beta = parameters["beta"]
     rho = beta + beta**2
     if x_0 is None:
@@ -43,11 +54,13 @@ def gr(problem: GMVIProblem, exit_criterion: ExitCriterion, parameters, x_0=None
             return step_1
         
         x_norm = np.linalg.norm(x - x_)
-        step_2 = (x_norm)**2 / ((4 * beta**2 * a_) * F_norm ** 2)
+        L = F_norm / x_norm
+
+        step_2 = 1 / ((4 * beta**2 * a_) * L**2 )
 
         step = min(step_1, step_2)
         # print(f"!!! step: {step}")
-        return step
+        return step, L
 
 
     # Run init
@@ -59,7 +72,7 @@ def gr(problem: GMVIProblem, exit_criterion: ExitCriterion, parameters, x_0=None
     logresult(results, 1, 0.0, init_opt_measure)
 
     while not exit_flag:
-        step = gr_stepsize(a, a_, x, x_, F, F_)
+        step, L = gr_stepsize(a, a_, x, x_, F, F_)
         a_ = a
         a = step
         A += a
@@ -76,12 +89,12 @@ def gr(problem: GMVIProblem, exit_criterion: ExitCriterion, parameters, x_0=None
 
         x_hat = (A - a)/A * x_hat + a/A * x
 
-        iteration += block_number
-        if iteration % ( block_number *  exit_criterion.loggingfreq) == 0:
+        iteration += m
+        if iteration % ( m *  exit_criterion.loggingfreq) == 0:
             elapsed_time = time.time() - start_time
             opt_measure = problem.func_value(x_hat)
             logging.info(f"elapsed_time: {elapsed_time}, iteration: {iteration}, opt_measure: {opt_measure}")
-            logresult(results, iteration, elapsed_time, opt_measure)
+            logresult(results, iteration, elapsed_time, opt_measure, L=L)
             exit_flag = CheckExitCondition(exit_criterion, iteration, elapsed_time, opt_measure)
 
     return results, x

@@ -10,11 +10,21 @@ from src.algorithms.utils.helper import construct_block_range
 
 def coder(problem: GMVIProblem, exitcriterion: ExitCriterion, parameters, x0=None):
     # Initialize parameters and variables
+    d = problem.operator_func.d
+    n = problem.operator_func.n
     L = parameters["L"]
     gamma = parameters["gamma"]
-    block_size = parameters["block_size"]
-    blocks = construct_block_range(dimension=problem.d, block_size=block_size)
+    block_size = parameters['block_size']
+    blocks_1 = construct_block_range(begin=0, end=d, block_size=block_size)
+    block_size_2 = parameters['block_size_2']
+    blocks_2 = construct_block_range(begin=d, end = d+n, block_size=block_size_2)
+    blocks = blocks_1 + blocks_2
+    m_1 = len(blocks_1)
+    m_2 = len(blocks_2)
     m = len(blocks)
+    logging.info(f"m_1 = {m_1}")
+    logging.info(f"m_2 = {m_2}")
+    logging.info(f"m = {m}")
 
     a, A = 0, 0
     x0 = np.zeros(problem.d) if x0 is None else x0
@@ -112,11 +122,20 @@ def coder(problem: GMVIProblem, exitcriterion: ExitCriterion, parameters, x0=Non
 
 def coder_linesearch(problem: GMVIProblem, exitcriterion: ExitCriterion, parameters, x0=None):
     # Initialize parameters and variables
+    d = problem.operator_func.d
+    n = problem.operator_func.n
     gamma = parameters["gamma"]
-    block_size = parameters["block_size"]
-    blocks = construct_block_range(dimension=problem.d, block_size=block_size)
+    block_size = parameters['block_size']
+    blocks_1 = construct_block_range(begin=0, end=d, block_size=block_size)
+    block_size_2 = parameters['block_size_2']
+    blocks_2 = construct_block_range(begin=d, end = d+n, block_size=block_size_2)
+    blocks = blocks_1 + blocks_2
+    m_1 = len(blocks_1)
+    m_2 = len(blocks_2)
     m = len(blocks)
-
+    logging.info(f"m_1 = {m_1}")
+    logging.info(f"m_2 = {m_2}")
+    logging.info(f"m = {m}")
     L = 0.5
     L_ = 0.5
     a, A = 0, 0
@@ -180,7 +199,7 @@ def coder_linesearch(problem: GMVIProblem, exitcriterion: ExitCriterion, paramet
 
                 # Step 13
                 temp_x[block] = problem.g_func.prox_opr_block(block, x0[block] - z[block], A)
-                temp_F_store = problem.operator_func.func_map_block_update(F_store, temp_x[block], x_prev[block], block)
+                problem.operator_func.func_map_block_update(temp_F_store, temp_x[block], x_prev[block], block)
                 
             # Step 15
             norm_F_p = np.linalg.norm(temp_F_store - temp_p)
@@ -201,7 +220,7 @@ def coder_linesearch(problem: GMVIProblem, exitcriterion: ExitCriterion, paramet
             elapsed_time = time.time() - starttime
             opt_measure = problem.func_value(x_tilde)
             print(f"Elapsed time: {elapsed_time}, Iteration: {iteration}, Opt measure: {opt_measure}")
-            logresult(results, iteration, elapsed_time, opt_measure)
+            logresult(results, iteration, elapsed_time, opt_measure, L=L)
             exitflag = CheckExitCondition(exitcriterion, iteration, elapsed_time, opt_measure)
 
     #  x_tilde

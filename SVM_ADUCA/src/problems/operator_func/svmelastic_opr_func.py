@@ -1,4 +1,6 @@
 import numpy as np
+# from scipy.linalg.blas import dgemm
+from scipy.sparse import csr_matrix
 
 class SVMElasticOprFunc:
     def __init__(self, data):
@@ -6,6 +8,7 @@ class SVMElasticOprFunc:
         self.n = len(data.values)
         self.A = data.features
         self.b = data.values
+        self.A_sparse = csr_matrix(self.A)
         # print(f"!!! A.shape: {self.A.shape}")
 
     def func_value(self, x):
@@ -52,14 +55,18 @@ class SVMElasticOprFunc:
     def func_map_block_update(self, F, uslice, uslice_, block:range):
         ### only update alpha
         if block.start >= self.d:
-            F[:self.d] += ((self.b[block.start-self.d:block.stop-self.d]*(uslice - uslice_)) @ self.A[block.start-self.d:block.stop-self.d]) / self.n
+            F[:self.d] += (self.A_sparse[block.start-self.d:block.stop-self.d].T.dot((self.b[block.start-self.d:block.stop-self.d]*(uslice - uslice_)))) / self.n
+            # F[:self.d] += ((self.b[block.start-self.d:block.stop-self.d]*(uslice - uslice_)) @ self.A_sparse[block.start-self.d:block.stop-self.d]) / self.n
+            # F[:self.d] += (dgemm(alpha=1.0, a=(self.b[block.start-self.d:block.stop-self.d]*(uslice - uslice_)), b=self.A[block.start-self.d:block.stop-self.d])) / self.n
         ### only update x
         elif block.stop <= self.d:
-            F[self.d:] += -self.b * (self.A[:, block] @ (uslice - uslice_)) / self.n
+            F[self.d:] += -self.b * (self.A_sparse[:, block].dot((uslice - uslice_))) / self.n
+            # F[self.d:] += -self.b * (self.A_sparse[:, block] @ (uslice - uslice_)) / self.n
+            # F[self.d:] += -self.b * dgemm(alpha=1, a=self.A[:, block], b=(uslice - uslice_) ) / self.n
         ### update x (uslice[: self.d-block.start]), and update alpha (uslice[self.d-block.start:])
         else:
-            F[:self.d] += ((self.b[:block.stop-self.d] *(uslice[(self.d - block.start):] - uslice_[(self.d - block.start):])) @ self.A[:(block.stop - self.d)]) / self.n
-            F[self.d:] += -self.b * (self.A[:, block.start:] @ (uslice[:(self.d - block.start)] - uslice_[:(self.d - block.start)])) / self.n
+            F[:self.d] += ((self.b[:block.stop-self.d] *(uslice[(self.d - block.start):] - uslice_[(self.d - block.start):])) @ self.A_sparse[:(block.stop - self.d)]) / self.n
+            F[self.d:] += -self.b * (self.A_sparse[:, block.start:] @ (uslice[:(self.d - block.start)] - uslice_[:(self.d - block.start)])) / self.n
         return F
 
     def func_map_block_sample(self, j, t, x):
