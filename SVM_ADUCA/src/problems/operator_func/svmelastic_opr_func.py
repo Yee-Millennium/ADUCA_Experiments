@@ -7,8 +7,10 @@ class SVMElasticOprFunc:
         self.d = data.features.shape[1]
         self.n = len(data.values)
         self.A = data.features
+        self.A_T = self.A.T
         self.b = data.values
         self.A_sparse = csr_matrix(self.A)
+        self.A_sparse_T = self.A_sparse.T
         # print(f"!!! A.shape: {self.A.shape}")
 
     def func_value(self, x):
@@ -18,12 +20,16 @@ class SVMElasticOprFunc:
         return np.sum(np.maximum(res, 0)) / self.n
 
     def func_map(self, x):
-        assert len(x) == self.d + self.n
+        # assert len(x) == self.d + self.n
+        # ret = np.zeros(self.d + self.n)
+        # _x = x[:self.d]
+        # for t in range(self.n):
+        #     ret[:self.d] += x[self.d + t] * self.b[t] * self.A_sparse[t, :]
+        #     ret[self.d + t] = - (self.b[t] * (self.A_sparse[t, :] @ _x) - 1)
+        # return ret / self.n
         ret = np.zeros(self.d + self.n)
-        _x = x[:self.d]
-        for t in range(self.n):
-            ret[:self.d] += x[self.d + t] * self.b[t] * self.A[t, :]
-            ret[self.d + t] = - (self.b[t] * (self.A[t, :] @ _x) - 1)
+        ret[:self.d] = self.A_T @ (x[self.d:] * self.b)
+        ret[self.d:] = 1 - self.b * (self.A @ x[:self.d])
         return ret / self.n
 
     def func_map_block(self, j, x):

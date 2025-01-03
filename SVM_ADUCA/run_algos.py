@@ -18,7 +18,7 @@ from src.algorithms.pccm import pccm
 from src.algorithms.prcm import prcm
 from src.algorithms.rapd import rapd
 from src.algorithms.gr import gr
-from src.algorithms.aduca import aduca, aduca_restart, aduca_restart_scale, aduca_scale
+from src.algorithms.aduca import aduca_restart_scale, aduca_scale
 from src.problems.utils.data_parsers import libsvm_parser
 from src.problems.utils.data import Data
 from src.problems.GMVI_func import GMVIProblem
@@ -55,7 +55,10 @@ DATASET_INFO = {
     "w7a":(300, 24692),
     "w8a": (300, 49749),
     "covtype":(54, 581012),
-    "real-sim":(20958, 72309)
+    "real-sim":(20958, 72309),
+    "cod-rna": (8, 59535),
+    "cod-rna_t": (8, 271617),
+    "cod-rna_r": (8, 157413)
 }
 
 def parse_commandline():
@@ -185,21 +188,21 @@ def main():
         logging.info("Running Golden Ratio...")
         param = {"beta": beta, "block_size": block_size, "block_size_2": block_size_2}
         output, output_x = gr(problem, exitcriterion, param)
-    elif algorithm == "ADUCA_restart":
-        beta = args.beta
-        c = args.c
-        restartfreq = args.restartfreq
-        block_size = args.block_size
-        logging.info("Running ADUCA_restart...")
-        param = {"beta": beta, "c": c, "restartfreq": restartfreq, "block_size": block_size}
-        output, output_x = aduca_restart(problem, exitcriterion, param)
-    elif algorithm == "ADUCA":
-        beta = args.beta
-        c = args.c
-        block_size = args.block_size
-        logging.info("Running ADUCA...")
-        param = {"beta": beta, "c": c, "block_size": block_size}
-        output, output_x = aduca(problem, exitcriterion, param)
+    # elif algorithm == "ADUCA_restart":
+    #     beta = args.beta
+    #     c = args.c
+    #     restartfreq = args.restartfreq
+    #     block_size = args.block_size
+    #     logging.info("Running ADUCA_restart...")
+    #     param = {"beta": beta, "c": c, "restartfreq": restartfreq, "block_size": block_size}
+    #     output, output_x = aduca_restart(problem, exitcriterion, param)
+    # elif algorithm == "ADUCA":
+    #     beta = args.beta
+    #     c = args.c
+    #     block_size = args.block_size
+    #     logging.info("Running ADUCA...")
+    #     param = {"beta": beta, "c": c, "block_size": block_size}
+    #     output, output_x = aduca(problem, exitcriterion, param)
     elif algorithm == "ADUCA_restart_scale":
         beta = args.beta
         c = args.c

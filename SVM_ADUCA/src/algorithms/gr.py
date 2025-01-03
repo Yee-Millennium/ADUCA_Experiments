@@ -85,7 +85,8 @@ def gr(problem: GMVIProblem, exit_criterion: ExitCriterion, parameters, x_0=None
         x = problem.g_func.prox_opr(v - a * F, a, d)
 
         F_ = np.copy(F)
-        F = problem.operator_func.func_map(x)
+        # F = problem.operator_func.func_map(x)
+        problem.operator_func.func_map_block_update(F, x, x_, range(d+n))
 
         x_hat = (A - a)/A * x_hat + a/A * x
 
