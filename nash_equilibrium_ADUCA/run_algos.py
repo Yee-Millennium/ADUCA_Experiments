@@ -52,7 +52,7 @@ def main():
     scenario = int(args.scenario)
 
 
-    if scenario not in {1,2}:
+    if scenario not in {1,2,3}:
         raise ValueError("Invalid scenario selected.")
 
     n=1000
@@ -70,13 +70,12 @@ def main():
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")
     logging.info(f"timestamp = {timestamp}")
     logging.info("Completed initialization")
-    outputfilename = f"{outputdir}/{scenario}-{algorithm}-{args.lipschitz}-output-{timestamp}.json"
-    logging.info(f"outputfilename = {outputfilename}")
     logging.info("--------------------------------------------------")
 
     # Problem instance instantiation
     c = np.random.uniform(1,100,n)
-    L = np.random.uniform(0.5,5,n)
+    # L = np.random.uniform(0.5,5,n)
+    L = np.random.uniform(0.5,20,n)
     if scenario == 1:
          gamma = 1.1
          beta = np.random.uniform(0.5, 2,n)
@@ -84,6 +83,11 @@ def main():
     if scenario == 2:
         gamma = 1.5
         beta = np.random.uniform(0.3, 4,n)
+
+    if scenario == 3:
+        gamma = 0.7
+        beta = np.random.uniform(0.3, 4, n)
+
     F = SVMElasticOprFunc(n, gamma, beta, c, L)
     g = SVMElasticGFunc(n)
     problem = GMVIProblem(F, g)
@@ -94,6 +98,8 @@ def main():
     block_size = args.block_size
     coder_params = {"L": L, "block_size": block_size}
     output, output_x = coder(problem, exitcriterion, coder_params)
+    outputfilename = f"{outputdir}/{scenario}-CODER-{args.lipschitz}-output-{timestamp}.json"
+    logging.info(f"outputfilename = {outputfilename}")
     with open(outputfilename, 'w') as outfile:
         json.dump({"args": vars(args), 
                 "output_x": output_x.tolist(),
@@ -111,6 +117,8 @@ def main():
     block_size = args.block_size
     coder_params = {"L": L, "block_size": block_size}
     output, output_x = coder_linesearch(problem, exitcriterion, coder_params)
+    outputfilename = f"{outputdir}/{scenario}-CODER_linesearch-{args.lipschitz}-output-{timestamp}.json"
+    logging.info(f"outputfilename = {outputfilename}")
     with open(outputfilename, 'w') as outfile:
         json.dump({"args": vars(args), 
                 "output_x": output_x.tolist(),
@@ -128,6 +136,8 @@ def main():
     block_size = args.block_size
     pccm_params = {"L": L, "block_size": block_size}
     output, output_x = pccm(problem, exitcriterion, pccm_params)
+    outputfilename = f"{outputdir}/{scenario}-PCCM-{args.lipschitz}-output-{timestamp}.json"
+    logging.info(f"outputfilename = {outputfilename}")
     with open(outputfilename, 'w') as outfile:
         json.dump({"args": vars(args), 
                 "output_x": output_x.tolist(),
@@ -145,6 +155,28 @@ def main():
     logging.info("Running Golden Ratio...")
     param = {"beta": beta, "block_size": block_size}
     output, output_x = gr(problem, exitcriterion, param)
+    outputfilename = f"{outputdir}/{scenario}-GR-{args.lipschitz}-output-{timestamp}.json"
+    logging.info(f"outputfilename = {outputfilename}")
+    with open(outputfilename, 'w') as outfile:
+        json.dump({"args": vars(args), 
+                "output_x": output_x.tolist(),
+                "iterations": output.iterations, 
+                "times": output.times,
+                "optmeasures": output.optmeasures,
+                "L": output.L,
+                "L_hat": output.L_hat}, 
+                outfile)
+        logging.info(f"output saved to {outputfilename}")
+
+    # elif algorithm == "ADUCA_scale":
+    beta = args.beta
+    xi = args.xi
+    block_size = args.block_size
+    logging.info("Running ADUCA_scale...")
+    param = {"beta": beta, "xi": xi, "block_size": block_size}
+    output, output_x = aduca_scale(problem, exitcriterion, param)
+    outputfilename = f"{outputdir}/{scenario}-ADUCA_scale-{args.lipschitz}-output-{timestamp}.json"
+    logging.info(f"outputfilename = {outputfilename}")
     with open(outputfilename, 'w') as outfile:
         json.dump({"args": vars(args), 
                 "output_x": output_x.tolist(),
@@ -164,24 +196,8 @@ def main():
     logging.info("Running ADUCA_restart_scale...")
     param = {"beta": beta, "xi": xi, "restartfreq": restartfreq, "block_size": block_size}
     output, output_x = aduca_restart_scale(problem, exitcriterion, param)
-    with open(outputfilename, 'w') as outfile:
-        json.dump({"args": vars(args), 
-                "output_x": output_x.tolist(),
-                "iterations": output.iterations, 
-                "times": output.times,
-                "optmeasures": output.optmeasures,
-                "L": output.L,
-                "L_hat": output.L_hat}, 
-                outfile)
-        logging.info(f"output saved to {outputfilename}")
-
-    # elif algorithm == "ADUCA_scale":
-    beta = args.beta
-    xi = args.xi
-    block_size = args.block_size
-    logging.info("Running ADUCA_scale...")
-    param = {"beta": beta, "xi": xi, "block_size": block_size}
-    output, output_x = aduca_scale(problem, exitcriterion, param)
+    outputfilename = f"{outputdir}/{scenario}-ADUCA_restart_scale-{args.lipschitz}-output-{timestamp}.json"
+    logging.info(f"outputfilename = {outputfilename}")
     with open(outputfilename, 'w') as outfile:
         json.dump({"args": vars(args), 
                 "output_x": output_x.tolist(),

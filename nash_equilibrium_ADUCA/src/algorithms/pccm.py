@@ -11,7 +11,7 @@ from src.algorithms.utils.helper import construct_block_range
 def pccm(problem: GMVIProblem, exitcriterion: ExitCriterion, parameters, x0=None):
     # Initialize parameters and variables
     n = problem.operator_func.n
-    L = parameters["L"]
+    L = parameters["L"] * 2
     block_size = parameters['block_size']
     blocks = construct_block_range(begin=0, end=n, block_size=block_size)
     m = len(blocks)
@@ -21,14 +21,18 @@ def pccm(problem: GMVIProblem, exitcriterion: ExitCriterion, parameters, x0=None
     x0 = np.ones(n) if x0 is None else x0
     x, x_prev = x0.copy(), x0.copy()
     Q = np.sum(x)
+    p = problem.operator_func.p(Q)
+    p_ = p
+    dp = problem.operator_func.dp(Q)
+    dp_ = dp
     x_tilde = x0.copy()
     x_tilde_sum = np.zeros(n)
 
-    p = problem.operator_func.func_map(x0)
-    p_prev = p.copy()
-    F_store = np.copy(p)
+    F_tilde = problem.operator_func.func_map(x0)
+    F_tilde_prev = F_tilde.copy()
+    F_store = np.copy(F_tilde)
 
-    z, z_prev, q = np.zeros(n), np.zeros(n), np.zeros(n)
+    z, z_prev, F_bar = np.zeros(n), np.zeros(n), np.zeros(n)
 
     # Initialization
     iteration = 0
@@ -40,7 +44,7 @@ def pccm(problem: GMVIProblem, exitcriterion: ExitCriterion, parameters, x0=None
 
     # Main loop
     while not exitflag:
-        p_prev = np.copy(p)
+        F_tilde_prev = np.copy(F_tilde)
         z_prev = np.copy(z)
 
         # Update steps
@@ -52,24 +56,27 @@ def pccm(problem: GMVIProblem, exitcriterion: ExitCriterion, parameters, x0=None
         F_x_prev = np.copy(F_store)
 
         for idx, block in enumerate(blocks):
-            if idx != 0:
-                problem.operator_func.func_map_block_update(F_store, x[block], Q, block)
 
             # Step 6
-            p_prev[block] = p[block]
-            p[block] = F_store[block]
+            F_tilde_prev[block] = F_tilde[block]
+            F_tilde[block] = F_store[block]
 
             # Step 7
-            q[block] = p[block]
+            F_bar[block] = F_tilde[block]
 
             # Step 8
-            z[block] = z_prev[block] + a * q[block]
+            z[block] = z_prev[block] + a * F_bar[block]
 
             # Step 9
             x_prev[block] = x[block]
             x[block] = problem.g_func.prox_opr_block(x0[block] - z[block])
 
             Q += np.sum(x[block] - x_prev[block])
+            p_ = p
+            p = problem.operator_func.p(Q)
+            dp_ = dp
+            dp = problem.operator_func.dp(Q)
+            problem.operator_func.func_map_block_update(F_store, x, p, p_, dp, dp_, block)
             
         x_tilde_sum += a * x
         iteration += m

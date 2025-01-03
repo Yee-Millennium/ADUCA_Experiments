@@ -21,14 +21,18 @@ def coder(problem: GMVIProblem, exitcriterion: ExitCriterion, parameters, x0=Non
     x0 = np.ones(n) if x0 is None else x0
     x, x_prev = x0.copy(), x0.copy()
     Q = np.sum(x)
+    p = problem.operator_func.p(Q)
+    p_ = p
+    dp = problem.operator_func.dp(Q)
+    dp_ = dp
     x_tilde = x0.copy()
     x_tilde_sum = np.zeros(n)
 
-    p = problem.operator_func.func_map(x0)
-    p_prev = p.copy()
-    F_store = np.copy(p)
+    F_tilde = problem.operator_func.func_map(x0)
+    F_tilde_prev = F_tilde.copy()
+    F_store = np.copy(F_tilde)
 
-    z, z_prev, q = np.zeros(n), np.zeros(n), np.zeros(n)
+    z, z_prev, F_bar = np.zeros(n), np.zeros(n), np.zeros(n)
 
     # Initialization
     iteration = 0
@@ -40,7 +44,7 @@ def coder(problem: GMVIProblem, exitcriterion: ExitCriterion, parameters, x0=Non
 
     # Main loop
     while not exitflag:
-        p_prev = np.copy(p)
+        F_tilde_prev = np.copy(F_tilde)
         z_prev = np.copy(z)
 
         # Update steps
@@ -52,24 +56,27 @@ def coder(problem: GMVIProblem, exitcriterion: ExitCriterion, parameters, x0=Non
         F_x_prev = np.copy(F_store)
 
         for idx, block in enumerate(blocks):
-            if idx != 0:
-                problem.operator_func.func_map_block_update(F_store, x[block], Q, block)
 
             # Step 6
-            p_prev[block] = p[block]
-            p[block] = F_store[block]
+            F_tilde_prev[block] = F_tilde[block]
+            F_tilde[block] = F_store[block]
 
             # Step 7
-            q[block] = p[block] + (a_prev / a) * (F_x_prev[block] - p_prev[block])
+            F_bar[block] = F_tilde[block] + (a_prev / a) * (F_x_prev[block] - F_tilde_prev[block])
 
             # Step 8
-            z[block] = z_prev[block] + a * q[block]
+            z[block] = z_prev[block] + a * F_bar[block]
 
             # Step 9
             x_prev[block] = x[block]
             x[block] = problem.g_func.prox_opr_block(x0[block] - z[block])
 
             Q += np.sum(x[block] - x_prev[block])
+            p_ = p
+            p = problem.operator_func.p(Q)
+            dp_ = dp
+            dp = problem.operator_func.dp(Q)
+            problem.operator_func.func_map_block_update(F_store, x, p, p_, dp, dp_, block)
             
         x_tilde_sum += a * x
         iteration += m
@@ -92,7 +99,7 @@ def coder(problem: GMVIProblem, exitcriterion: ExitCriterion, parameters, x0=Non
 def coder_linesearch(problem: GMVIProblem, exitcriterion: ExitCriterion, parameters, x0=None):
     # Initialize parameters and variables
     n = problem.operator_func.n
-    L = parameters["L"]
+    L = 0.001
     block_size = parameters['block_size']
     blocks = construct_block_range(begin=0, end=n, block_size=block_size)
     m = len(blocks)
@@ -102,14 +109,18 @@ def coder_linesearch(problem: GMVIProblem, exitcriterion: ExitCriterion, paramet
     x0 = np.ones(n) if x0 is None else x0
     x, x_prev = x0.copy(), x0.copy()
     Q = np.sum(x)
+    p = problem.operator_func.p(Q)
+    p_ = p
+    dp = problem.operator_func.dp(Q)
+    dp_ = dp
     x_tilde = x0.copy()
     x_tilde_sum = np.zeros(n)
 
-    p = problem.operator_func.func_map(x0)
-    p_prev = p.copy()
-    F_store = np.copy(p)
+    F_tilde = problem.operator_func.func_map(x0)
+    F_tilde_prev = F_tilde.copy()
+    F_store = np.copy(F_tilde)
 
-    z, z_prev, q = np.zeros(n), np.zeros(n), np.zeros(n)
+    z, z_prev, F_bar = np.zeros(n), np.zeros(n), np.zeros(n)
 
     # Initialization
     iteration = 0
@@ -122,7 +133,7 @@ def coder_linesearch(problem: GMVIProblem, exitcriterion: ExitCriterion, paramet
     # Main loop
     while not exitflag:
         np.copyto(x_prev, x)
-        np.copyto(p_prev, p)
+        np.copyto(F_tilde_prev, F_tilde)
         np.copyto(z_prev, z)
         F_x_prev = np.copy(F_store)
         Q = np.sum(x)
@@ -131,52 +142,60 @@ def coder_linesearch(problem: GMVIProblem, exitcriterion: ExitCriterion, paramet
         L_ = L
 
         # Step 5
-        L = L_ / 4
+        L = L_ / 2
 
         # Step 6
         while{True}:
             # Step 7
             L = 2 * L
             temp_x = np.copy(x)
-            temp_p = np.copy(p)
-            temp_p_prev = np.copy(p_prev)
+            temp_F_tilde = np.copy(F_tilde)
+            temp_F_tilde_prev = np.copy(F_tilde_prev)
             temp_F_store = np.copy(F_store)
             temp_Q = Q
+            temp_p = p
+            temp_dp = dp
 
             # Step 8
             a = 1 / (2 * L)
+            if a < 0.000001:
+                break
             A = A_prev + a
 
             # Step 9
             for idx, block in enumerate(blocks):
-                if idx != 0:
-                    problem.operator_func.func_map_block_update(temp_F_store, temp_x[block], temp_Q, block)
-
                 # Step 10
-                temp_p_prev[block] = temp_p[block]
-                temp_p[block] = F_store[block]
+                temp_F_tilde_prev[block] = temp_F_tilde[block]
+                temp_F_tilde[block] = F_store[block]
 
                 # Step 11
-                q[block] = temp_p[block] + (a_prev / a) * (F_x_prev[block] - temp_p_prev[block])
+                F_bar[block] = temp_F_tilde[block] + (a_prev / a) * (F_x_prev[block] - temp_F_tilde_prev[block])
 
                 # Step 12
-                z[block] = z_prev[block] + a * q[block]
+                z[block] = z_prev[block] + a * F_bar[block]
 
                 # Step 13
                 temp_x[block] = problem.g_func.prox_opr_block(x0[block] - z[block])
 
                 temp_Q += np.sum(temp_x[block] - x_prev[block])
+                p_ = temp_p
+                temp_p = problem.operator_func.p(Q)
+                dp_ = temp_dp
+                temp_dp = problem.operator_func.dp(Q)
+                problem.operator_func.func_map_block_update(temp_F_store, temp_x, temp_p, p_, temp_dp, dp_, block)
                 
                 
             # Step 15
-            norm_F_p = np.linalg.norm(temp_F_store - temp_p)
+            norm_F_p = np.linalg.norm(temp_F_store - temp_F_tilde)
             norm_x = np.linalg.norm(temp_x - x_prev)
             if norm_F_p <= L * norm_x:
                 x = np.copy(temp_x)
-                p = np.copy(temp_p)
-                p_prev = np.copy(temp_p_prev)
+                F_tilde = np.copy(temp_F_tilde)
+                F_tilde_prev = np.copy(temp_F_tilde_prev)
                 F_store = np.copy(temp_F_store)
                 Q = temp_Q
+                p = temp_p
+                dp = temp_dp
                 break
 
         x_tilde_sum += a * x

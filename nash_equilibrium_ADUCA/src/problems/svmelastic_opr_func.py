@@ -1,4 +1,5 @@
 import numpy as np
+import warnings
 # from scipy.linalg.blas import dgemm
 from scipy.sparse import csr_matrix
 
@@ -32,9 +33,10 @@ class SVMElasticOprFunc:
     
     def p(self, Q):
         return (5000**(1/self.gamma)) * (Q**(-1/self.gamma))
+        
     
     def dp(self, Q):
-        res = -1./self.gamma * (5000**(1./self.gamma)) * (Q**(-1./self.gamma -1))
+        res = -1./self.gamma * (5000**(1./self.gamma)) * (Q**(-1/self.gamma - 1))
         return res
     
     def func_map(self, q):
@@ -46,8 +48,10 @@ class SVMElasticOprFunc:
         res = self.df_block(q_block, block) - self.p(Q) - q_block*self.dp(Q)
         return res
     
-    def func_map_block_update(self, F, q_block, Q, block:range):
-        F[block] = self.func_map_block(q_block, Q, block)
+    def func_map_block_update(self, F, q, p, p_, dp, dp_, block:range):
+        F[block] = self.df_block(q[block], block) - p - q[block] * dp
+        F[:block.start] += (p_ - p) + q[:block.start]*(dp_ - dp)
+        F[block.stop:] += (p_ - p) + q[block.stop:]*(dp_ - dp)
         return F
 
     # def func_map_block_sample(self, j, t, x):

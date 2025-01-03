@@ -42,16 +42,16 @@ def gr(problem: GMVIProblem, exit_criterion: ExitCriterion, parameters, x_0=None
  
         F_norm = np.linalg.norm(F - F_)
         if F_norm == 0 :
-            return step_1
+            return step_1, np.inf
         
         x_norm = np.linalg.norm(x - x_)
-        L = F_norm / x_norm
+        L_gr = F_norm / x_norm
 
-        step_2 = 1 / ((4 * beta**2 * a_) * L**2 )
+        step_2 = 1 / ((4 * beta**2 * a_) * L_gr**2 )
 
         step = min(step_1, step_2)
         # print(f"!!! step: {step}")
-        return step, L
+        return step, L_gr
 
 
     # Run init
@@ -63,7 +63,7 @@ def gr(problem: GMVIProblem, exit_criterion: ExitCriterion, parameters, x_0=None
     logresult(results, 1, 0.0, init_opt_measure)
 
     while not exit_flag:
-        step, L = gr_stepsize(a, a_, x, x_, F, F_)
+        step, L_gr = gr_stepsize(a, a_, x, x_, F, F_)
         a_ = a
         a = step
         A += a
@@ -85,7 +85,7 @@ def gr(problem: GMVIProblem, exit_criterion: ExitCriterion, parameters, x_0=None
             elapsed_time = time.time() - start_time
             opt_measure = problem.residual(x_hat)
             logging.info(f"elapsed_time: {elapsed_time}, iteration: {iteration}, opt_measure: {opt_measure}")
-            logresult(results, iteration, elapsed_time, opt_measure, L=L)
+            logresult(results, iteration, elapsed_time, opt_measure, L=L_gr)
             exit_flag = CheckExitCondition(exit_criterion, iteration, elapsed_time, opt_measure)
 
     return results, x
